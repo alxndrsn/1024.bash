@@ -1,0 +1,198 @@
+#!/bin/bash
+set -e
+
+board_dim=4
+total_tiles=$((board_dim * board_dim))
+ENABLE_LOGGING=true
+
+log() {
+	if $ENABLE_LOGGING; then
+		echo "# $@"
+	fi
+}
+
+trace() {
+	local name=$1
+	shift
+	local stage=$1
+	shift
+	log TRACE :: $name :: $stage $@
+}
+
+TODO() {
+	log TODO: $@
+	exit 1
+}
+
+game_loop() {
+	while $game_in_progress; do
+		render_board
+		wait_for_input
+		process_input
+		if $input_was_valid; then
+			add_new_square
+		fi
+		check_for_game_over
+	done
+}
+
+new_game() {
+	trace new_game ENTER
+	clear_field_of_play
+	add_new_square
+	add_new_square
+	game_in_progress=true
+	game_loop
+	trace new_game EXIT
+}
+
+clear_field_of_play() {
+	trace clear_field_of_play ENTER
+	for ((i=0; i<$total_tiles; ++i)); do
+		board[$i]=0
+	done
+	trace clear_field_of_play EXIT
+}
+
+add_new_square() {
+	trace add_new_square ENTER
+	local need_to_add=true
+	while $need_to_add; do
+		log "add_new loop..." ;
+		local cell_index=$((RANDOM % total_tiles))
+		local current_content=${board[$cell_index]}
+		log "current content=$current_content"
+		if [[ $current_content == 0 ]]; then
+			log "adding square at ($x,$y)"
+			local need_to_add=false
+			board[$cell_index]=1
+		fi
+	done
+	trace add_new_square EXIT
+}
+
+check_for_game_over() {
+	# TODO game over check is a bit more complex than "no new squares"
+	return
+	for ((i=0; i<$total_tiles; ++i)); do
+		if [[ ${board[$i]} == 0 ]]; then
+			return
+		fi
+	done
+	echo "There are no empty squares."
+	echo "Game over."
+	exit 1
+}
+
+wait_for_input() {
+	read -s -n 1 in_key
+}
+
+get_index() {
+	local x=$1
+	local y=$2
+	echo $((y * board_dim + x))
+}
+
+get_content() {
+	local x=$1
+	local y=$2
+	local index=$(get_index $x $y)
+	echo ${board[$index]}
+}
+
+set_content() {
+	local x=$1
+	local y=$2
+	local new_value=$3
+	local index=$(get_index $x $y)
+	board[$index]=${new_value}
+}
+
+shuffle() {
+	case $1 in
+		up )
+			for ((x=0; x<$board_dim; ++x)); do
+				for ((y=0; y<$board_dim; ++y)); do
+					# TODO obvs there are more efficient ways of doing this!!!
+					for ((repeats=$((board_dim-y)); repeats>0; --repeats)); do
+						local current_content=$(get_content $x $y)
+						if [[ $current_content == 0 ]]; then
+							# move everything in this column up one
+							for ((z=$y; z<$((board_dim-1)); ++z)); do
+								local one_above=$(get_index $x $((z+1)))
+								board[$(get_index $x $z)]=${board[$one_above]}
+								board[$one_above]=0
+								input_was_valid=true
+							done
+						fi
+					done
+				done
+			done
+			;;
+	esac
+}
+
+squash() {
+	trace squash ENTRY :: $@
+	case $1 in
+		up )
+			local x_change=0
+			local y_change=1
+			for ((x=0; x<$board_dim; ++x)); do
+				for ((y=0; y<$board_dim; ++y)); do
+					local this_content=$(get_content $x $y)
+					local next_index=$(get_index $((x+x_change)) $((y+y_change)))
+					local next_content=${board[next_index]}
+					log "squashing.  this=$this_content; next=$next_content"
+					if [[ $this_content == $next_content ]]; then
+						set_content $x $y $((this_content * 2))
+						board[$next_index]=0
+						input_was_valid=true
+						log "Done squashing."
+					else
+						log "Actually not squashing."
+					fi
+				done
+			done
+			;;
+	esac
+}
+
+move() {
+	local direction=$1
+	shuffle $direction
+	squash $direction
+	shuffle $direction
+}
+
+process_input() {
+	input_was_valid=false
+	case $in_key in
+		w ) move up ;;
+		a ) move left ;;
+		s ) move down ;;
+		d ) move right ;;
+		* ) wait_for_input; process_input ;;
+	esac
+}
+
+render_board() {
+	trace render_board ENTER
+
+	local counter=$board_dim
+	local disp="######################\n#"
+	for ((i=0; i<$total_tiles; ++i)); do
+		local cell_content=${board[$i]}
+		local disp="${disp}${cell_content}#"
+		if ((--counter == 0)); then
+			local disp="${disp}\n#"
+			local counter=$board_dim
+		fi
+	done
+	echo -e "${disp}"
+	trace render_board EXIT
+}
+
+new_game
+
