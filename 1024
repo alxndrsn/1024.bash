@@ -57,6 +57,12 @@ clear_field_of_play() {
 add_new_square() {
 	trace add_new_square ENTER
 	local need_to_add=true
+	local new_val=$((RANDOM % 10))
+	if [[ $new_val == 0 ]]; then
+		new_val=2
+	else
+		new_val=1
+	fi
 	while $need_to_add; do
 		log "add_new loop..." ;
 		local cell_index=$((RANDOM % total_tiles))
@@ -65,7 +71,7 @@ add_new_square() {
 		if [[ $current_content == 0 ]]; then
 			log "adding square at ($x,$y)"
 			local need_to_add=false
-			board[$cell_index]=1
+			board[$cell_index]=$new_val
 		fi
 	done
 	trace add_new_square EXIT
@@ -114,7 +120,6 @@ shuffle() {
 		up )
 			for ((x=0; x<$board_dim; ++x)); do
 				for ((y=0; y<$board_dim; ++y)); do
-					# TODO obvs there are more efficient ways of doing this!!!
 					for ((repeats=$((board_dim-y)); repeats>0; --repeats)); do
 						local current_content=$(get_content $x $y)
 						if [[ $current_content == 0 ]]; then
@@ -133,7 +138,6 @@ shuffle() {
 		left )
 			for ((y=0; y<$board_dim; ++y)); do
 				for ((x=0; x<$board_dim; ++x)); do
-					# TODO obvs there are more efficient ways of doing this!!!
 					for ((repeats=$((board_dim-x)); repeats>0; --repeats)); do
 						local current_content=$(get_content $x $y)
 						if [[ $current_content == 0 ]]; then
@@ -152,7 +156,6 @@ shuffle() {
 		down )
 			for ((x=$((board_dim-1)); x>=0; --x)); do
 				for ((y=$((board_dim-1)); y>0; --y)); do
-					# TODO obvs there are more efficient ways of doing this!!!
 					for ((repeats=$y; repeats>0; --repeats)); do
 						local current_content=$(get_content $x $y)
 						if [[ $current_content == 0 ]]; then
@@ -171,7 +174,6 @@ shuffle() {
 		right )
 			for ((y=$((board_dim-1)); y>=0; --y)); do
 				for ((x=$((board_dim-1)); x>0; --x)); do
-					# TODO obvs there are more efficient ways of doing this!!!
 					for ((repeats=$x; repeats>0; --repeats)); do
 						local current_content=$(get_content $x $y)
 						if [[ $current_content == 0 ]]; then
@@ -262,17 +264,25 @@ process_input() {
 	esac
 }
 
+HORIZONTAL_LINE='#########################################'
+PADDING_LINE='#'
+for ((i=0; i<$board_dim; ++i)); do
+	PADDING_LINE="${PADDING_LINE}\t\t#"
+done
 render_board() {
 	trace render_board ENTER
 
 	local counter=$board_dim
-	local disp="######################\n#"
+	local disp="$HORIZONTAL_LINE\n$PADDING_LINE\n"
 	for ((i=0; i<$total_tiles; ++i)); do
 		local cell_content=${board[$i]}
-		local disp="${disp}${cell_content}#"
+		local disp="${disp}# ${cell_content}\t\t"
 		if ((--counter == 0)); then
-			local disp="${disp}\n#"
-			local counter=$board_dim
+			local disp="${disp}#\n$PADDING_LINE\n$HORIZONTAL_LINE\n"
+			if ((i+1 < total_tiles)); then
+				local disp="${disp}$PADDING_LINE\n"
+				local counter=$board_dim
+			fi
 		fi
 	done
 	echo -e "${disp}"
