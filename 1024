@@ -241,8 +241,8 @@ squash_down_or_right() {
 squash_up_or_left() {
 	local x_change=$1
 	local y_change=$2
-	for ((x=0; x<$board_dim; ++x)); do
-		for ((y=0; y<$board_dim; ++y)); do
+	for ((x=0; x<$((board_dim-x_change)); ++x)); do
+		for ((y=0; y<$((board_dim-y_change)); ++y)); do
 			local this_content=$(get_content $x $y)
 			local next_index=$(get_index $((x+x_change)) $((y+y_change)))
 			local next_content=${board[next_index]}
