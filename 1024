@@ -279,6 +279,7 @@ render_board() {
 		local disp="${disp}# ${cell_content}\t\t"
 		if ((--counter == 0)); then
 			local disp="${disp}#\n$PADDING_LINE\n$HORIZONTAL_LINE\n"
+			# only add trailing padding line if there is more board to render
 			if ((i+1 < total_tiles)); then
 				local disp="${disp}$PADDING_LINE\n"
 				local counter=$board_dim
