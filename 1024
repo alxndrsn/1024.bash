@@ -3,7 +3,7 @@ set -e
 
 board_dim=4
 total_tiles=$((board_dim * board_dim))
-ENABLE_LOGGING=true
+ENABLE_LOGGING=false
 
 log() {
 	if $ENABLE_LOGGING; then
@@ -31,6 +31,7 @@ game_loop() {
 		process_input
 		if $input_was_valid; then
 			add_new_square
+			input_was_valid=false
 		fi
 		check_for_game_over
 	done
@@ -126,9 +127,12 @@ shuffle() {
 							# move everything in this column up one
 							for ((z=$y; z<$((board_dim-1)); ++z)); do
 								local one_above=$(get_index $x $((z+1)))
-								board[$(get_index $x $z)]=${board[$one_above]}
-								board[$one_above]=0
-								input_was_valid=true
+								local value_above=${board[$one_above]}
+								if [[ $value_above > 0 ]]; then
+									board[$(get_index $x $z)]=${value_above}
+									board[$one_above]=0
+									input_was_valid=true
+								fi
 							done
 						fi
 					done
@@ -144,9 +148,12 @@ shuffle() {
 							# move everything in this row left one
 							for ((z=$x; z<$((board_dim-1)); ++z)); do
 								local one_above=$(get_index $((z+1)) $y)
-								board[$(get_index $z $y)]=${board[$one_above]}
-								board[$one_above]=0
-								input_was_valid=true
+								local value_above=${board[$one_above]}
+								if [[ $value_above > 0 ]]; then
+									board[$(get_index $z $y)]=$value_above
+									board[$one_above]=0
+									input_was_valid=true
+								fi
 							done
 						fi
 					done
@@ -162,9 +169,12 @@ shuffle() {
 							# move everything in this column above this square down one
 							for ((z=$y; z>0; --z)); do
 								local one_above=$(get_index $x $((z-1)))
-								board[$(get_index $x $z)]=${board[$one_above]}
-								board[$one_above]=0
-								input_was_valid=true
+								local value_above=${board[$one_above]}
+								if [[ $value_above > 0 ]]; then
+									board[$(get_index $x $z)]=$value_above
+									board[$one_above]=0
+									input_was_valid=true
+								fi
 							done
 						fi
 					done
@@ -180,9 +190,12 @@ shuffle() {
 							# move everything in this row left one
 							for ((z=$x; z>0; --z)); do
 								local one_above=$(get_index $((z-1)) $y)
-								board[$(get_index $z $y)]=${board[$one_above]}
-								board[$one_above]=0
-								input_was_valid=true
+								local value_above=${board[$one_above]}
+								if [[ $value_above > 0 ]]; then
+									board[$(get_index $z $y)]=$value_above
+									board[$one_above]=0
+									input_was_valid=true
+								fi
 							done
 						fi
 					done
@@ -212,7 +225,7 @@ squash_down_or_right() {
 			local next_content=${board[next_index]}
 			log "squashing ($x,$y)->$next_index.  this=$this_content; next=$next_content"
 			if [[ $((next_index > -1)) == 1 ]]; then
-				if [[ $this_content == $next_content ]]; then
+				if [[ $this_content > 0 ]] && [[ $this_content == $next_content ]]; then
 					set_content $x $y $((this_content * 2))
 					board[$next_index]=0
 					input_was_valid=true
@@ -234,7 +247,7 @@ squash_up_or_left() {
 			local next_index=$(get_index $((x+x_change)) $((y+y_change)))
 			local next_content=${board[next_index]}
 			log "squashing.  this=$this_content; next=$next_content"
-			if [[ $this_content == $next_content ]]; then
+			if [[ $this_content > 0 ]] && [[ $this_content == $next_content ]]; then
 				set_content $x $y $((this_content * 2))
 				board[$next_index]=0
 				input_was_valid=true
@@ -271,17 +284,21 @@ for ((i=0; i<$board_dim; ++i)); do
 done
 render_board() {
 	trace render_board ENTER
+	clear
 
 	local counter=$board_dim
 	local disp="$HORIZONTAL_LINE\n$PADDING_LINE\n"
 	for ((i=0; i<$total_tiles; ++i)); do
 		local cell_content=${board[$i]}
+		if [[ $cell_content == 0 ]]; then
+			local cell_content=''
+		fi
 		local disp="${disp}# ${cell_content}\t\t"
 		if ((--counter == 0)); then
-			local disp="${disp}#\n$PADDING_LINE\n$HORIZONTAL_LINE\n"
+			local disp="${disp}#\n$PADDING_LINE\n$HORIZONTAL_LINE"
 			# only add trailing padding line if there is more board to render
 			if ((i+1 < total_tiles)); then
-				local disp="${disp}$PADDING_LINE\n"
+				local disp="${disp}\n$PADDING_LINE\n"
 				local counter=$board_dim
 			fi
 		fi
