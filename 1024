@@ -149,6 +149,44 @@ shuffle() {
 				done
 			done
 			;;
+		down )
+			for ((x=$((board_dim-1)); x>=0; --x)); do
+				for ((y=$((board_dim-1)); y>0; --y)); do
+					# TODO obvs there are more efficient ways of doing this!!!
+					for ((repeats=$y; repeats>0; --repeats)); do
+						local current_content=$(get_content $x $y)
+						if [[ $current_content == 0 ]]; then
+							# move everything in this column above this square down one
+							for ((z=$y; z>0; --z)); do
+								local one_above=$(get_index $x $((z-1)))
+								board[$(get_index $x $z)]=${board[$one_above]}
+								board[$one_above]=0
+								input_was_valid=true
+							done
+						fi
+					done
+				done
+			done
+			;;
+		right )
+			for ((y=$((board_dim-1)); y>=0; --y)); do
+				for ((x=$((board_dim-1)); x>0; --x)); do
+					# TODO obvs there are more efficient ways of doing this!!!
+					for ((repeats=$x; repeats>0; --repeats)); do
+						local current_content=$(get_content $x $y)
+						if [[ $current_content == 0 ]]; then
+							# move everything in this row left one
+							for ((z=$x; z>0; --z)); do
+								local one_above=$(get_index $((z-1)) $y)
+								board[$(get_index $z $y)]=${board[$one_above]}
+								board[$one_above]=0
+								input_was_valid=true
+							done
+						fi
+					done
+				done
+			done
+			;;
 	esac
 }
 
@@ -157,7 +195,32 @@ squash() {
 	case $1 in
 		up ) squash_up_or_left 0 1 ;;
 		left ) squash_up_or_left 1 0 ;;
+		down ) squash_down_or_right 0 1 ;;
+		right ) squash_down_or_right 1 0 ;;
 	esac
+}
+
+squash_down_or_right() {
+	local x_change=$1
+	local y_change=$2
+	for ((x=$((board_dim-1)); x>=0; --x)); do
+		for ((y=$((board_dim-1)); y>=0; --y)); do
+			local this_content=$(get_content $x $y)
+			local next_index=$(get_index $((x-x_change)) $((y-y_change)))
+			local next_content=${board[next_index]}
+			log "squashing ($x,$y)->$next_index.  this=$this_content; next=$next_content"
+			if [[ $((next_index > -1)) == 1 ]]; then
+				if [[ $this_content == $next_content ]]; then
+					set_content $x $y $((this_content * 2))
+					board[$next_index]=0
+					input_was_valid=true
+					log "Done squashing."
+				else
+					log "Actually not squashing."
+				fi
+			fi
+		done
+	done
 }
 
 squash_up_or_left() {
