@@ -26,14 +26,14 @@ TODO() {
 
 game_loop() {
 	while $game_in_progress; do
-		render_board
 		wait_for_input
 		process_input
 		if $input_was_valid; then
 			add_new_square
+			render_board
+			check_for_game_over
 			input_was_valid=false
 		fi
-		check_for_game_over
 	done
 }
 
@@ -44,6 +44,7 @@ new_game() {
 	add_new_square
 	add_new_square
 	game_in_progress=true
+	render_board
 	game_loop
 	trace new_game EXIT
 }
