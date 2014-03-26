@@ -39,6 +39,7 @@ game_loop() {
 
 new_game() {
 	trace new_game ENTER
+	score=0
 	clear_field_of_play
 	add_new_square
 	add_new_square
@@ -226,7 +227,9 @@ squash_down_or_right() {
 			log "squashing ($x,$y)->$next_index.  this=$this_content; next=$next_content"
 			if [[ $((next_index > -1)) == 1 ]]; then
 				if [[ $this_content > 0 ]] && [[ $this_content == $next_content ]]; then
-					set_content $x $y $((this_content * 2))
+					local new_value=$((this_content * 2))
+					set_content $x $y $new_value
+					((score += new_value))
 					board[$next_index]=0
 					input_was_valid=true
 					log "Done squashing."
@@ -248,7 +251,9 @@ squash_up_or_left() {
 			local next_content=${board[next_index]}
 			log "squashing.  this=$this_content; next=$next_content"
 			if [[ $this_content > 0 ]] && [[ $this_content == $next_content ]]; then
-				set_content $x $y $((this_content * 2))
+				local new_value=$((this_content * 2))
+				set_content $x $y $new_value
+				((score += new_value))
 				board[$next_index]=0
 				input_was_valid=true
 				log "Done squashing."
@@ -287,7 +292,7 @@ render_board() {
 	clear
 
 	local counter=$board_dim
-	local disp="$HORIZONTAL_LINE\n$PADDING_LINE\n"
+	local disp="SCORE: $(printf '%7s' $score)\n\n$HORIZONTAL_LINE\n$PADDING_LINE\n"
 	for ((i=0; i<$total_tiles; ++i)); do
 		local cell_content=${board[$i]}
 		if [[ $cell_content == 0 ]]; then
