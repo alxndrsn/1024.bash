@@ -218,8 +218,8 @@ squash() {
 squash_down_or_right() {
 	local x_change=$1
 	local y_change=$2
-	for ((x=$((board_dim-1)); x>=0; --x)); do
-		for ((y=$((board_dim-1)); y>=0; --y)); do
+	for ((x=$((board_dim-1)); x>=$x_change; --x)); do
+		for ((y=$((board_dim-1)); y>=$y_change; --y)); do
 			local this_content=$(get_content $x $y)
 			local next_index=$(get_index $((x-x_change)) $((y-y_change)))
 			local next_content=${board[next_index]}
