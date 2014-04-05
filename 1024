@@ -124,7 +124,6 @@ move() {
 		right )
 			for ((y=0; y<$board_dim; ++y)); do
 				local x=$board_dim_minus_two
-				local merged=''
 				while [ $x -ge 0 ]; do
 					this_index=$(get_index $x $y)
 					this_value=${board[$this_index]}
@@ -137,10 +136,10 @@ move() {
 							((++x))
 						fi
 						input_was_valid=true
-					elif [[ $this_value > 0 ]] && [[ $this_value == $right_value ]] && [[ "${merged[$((x+1))]}" == '' ]]; then
+					elif [[ $this_value > 0 ]] && [[ $this_value == $right_value ]] && [[ "${merged[$right_index]}" == '' ]]; then
 						board[$right_index]=$((this_value * 2)) # use <<= if available?
 						board[$this_index]=0
-						local merged[$((x+1))]=1
+						local merged[$right_index]=1
 						input_was_valid=true
 					else
 						((--x)) || true
@@ -151,7 +150,6 @@ move() {
 		down )
 			for ((x=0; x<$board_dim; ++x)); do
 				local y=$board_dim_minus_two
-				local merged=''
 				while [ $y -ge 0 ]; do
 					this_index=$(get_index $x $y)
 					this_value=${board[$this_index]}
@@ -164,10 +162,10 @@ move() {
 							((++y))
 						fi
 						input_was_valid=true
-					elif [[ $this_value > 0 ]] && [[ $this_value == $down_value ]] && [[ "${merged[$((y+1))]}" == '' ]]; then
+					elif [[ $this_value > 0 ]] && [[ $this_value == $down_value ]] && [[ "${merged[$down_index]}" == '' ]]; then
 						board[$down_index]=$((this_value * 2)) # use <<= if available?
 						board[$this_index]=0
-						local merged[$((y+1))]=1
+						local merged[$down_index]=1
 						input_was_valid=true
 					else
 						((--y)) || true
@@ -178,7 +176,6 @@ move() {
 		left )
 			for ((y=0; y<$board_dim; ++y)); do
 				local x=1
-				local merged=''
 				while [[ $x < $board_dim ]]; do
 					this_index=$(get_index $x $y)
 					this_value=${board[$this_index]}
@@ -191,10 +188,10 @@ move() {
 							((--x))
 						fi
 						input_was_valid=true
-					elif [[ $this_value > 0 ]] && [[ $this_value == $left_value ]] && [[ "${merged[$((x-1))]}" == '' ]]; then
+					elif [[ $this_value > 0 ]] && [[ $this_value == $left_value ]] && [[ "${merged[$left_index]}" == '' ]]; then
 						board[$left_index]=$((this_value * 2)) # use <<= if available?
 						board[$this_index]=0
-						local merged[$((x-1))]=1
+						local merged[$left_index]=1
 						input_was_valid=true
 					else
 						((++x))
@@ -205,7 +202,6 @@ move() {
 		up )
 			for ((x=0; x<$board_dim; ++x)); do
 				local y=1
-				local merged=''
 				while [[ $y < $board_dim ]]; do
 					this_index=$(get_index $x $y)
 					this_value=${board[$this_index]}
@@ -218,10 +214,10 @@ move() {
 							((--y))
 						fi
 						input_was_valid=true
-					elif [[ $this_value > 0 ]] && [[ $this_value == $up_value ]] && [[ "${merged[$((y-1))]}" == '' ]]; then
+					elif [[ $this_value > 0 ]] && [[ $this_value == $up_value ]] && [[ "${merged[$up_index]}" == '' ]]; then
 						board[$up_index]=$((this_value * 2)) # use <<= if available?
 						board[$this_index]=0
-						local merged[$((y-1))]=1
+						local merged[$up_index]=1
 						input_was_valid=true
 					else
 						((++y))
