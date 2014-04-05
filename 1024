@@ -2,6 +2,7 @@
 set -e
 
 board_dim=4
+board_dim_minus_two=$((board_dim-2))
 total_tiles=$((board_dim * board_dim))
 ENABLE_LOGGING=false
 
@@ -118,158 +119,117 @@ set_content() {
 	board[$index]=${new_value}
 }
 
-shuffle() {
+move() {
 	case $1 in
-		up )
-			for ((x=0; x<$board_dim; ++x)); do
-				for ((y=0; y<$board_dim; ++y)); do
-					for ((repeats=$((board_dim-y)); repeats>0; --repeats)); do
-						local current_content=$(get_content $x $y)
-						if [[ $current_content == 0 ]]; then
-							# move everything in this column up one
-							for ((z=$y; z<$((board_dim-1)); ++z)); do
-								local one_above=$(get_index $x $((z+1)))
-								local value_above=${board[$one_above]}
-								if [[ $value_above > 0 ]]; then
-									board[$(get_index $x $z)]=${value_above}
-									board[$one_above]=0
-									input_was_valid=true
-								fi
-							done
+		right )
+			for ((y=0; y<$board_dim; ++y)); do
+				local x=$board_dim_minus_two
+				local merged=''
+				while [ $x -ge 0 ]; do
+					this_index=$(get_index $x $y)
+					this_value=${board[$this_index]}
+					right_index=$(get_index $((x+1)) $y)
+					right_value=${board[$right_index]}
+					if [[ $this_value > 0 ]] && [[ $right_value == 0 ]]; then
+						board[$right_index]=$this_value
+						board[$this_index]=0
+						if [[ $x < $board_dim_minus_two ]]; then
+							((++x))
 						fi
-					done
+						input_was_valid=true
+					elif [[ $this_value > 0 ]] && [[ $this_value == $right_value ]] && [[ "${merged[$((x+1))]}" == '' ]]; then
+						board[$right_index]=$((this_value * 2)) # use <<= if available?
+						board[$this_index]=0
+						local merged[$((x+1))]=1
+						input_was_valid=true
+					else
+						((--x)) || true
+					fi
+				done
+			done
+			;;
+		down )
+			for ((x=0; x<$board_dim; ++x)); do
+				local y=$board_dim_minus_two
+				local merged=''
+				while [ $y -ge 0 ]; do
+					this_index=$(get_index $x $y)
+					this_value=${board[$this_index]}
+					down_index=$(get_index $x $((y+1)))
+					down_value=${board[$down_index]}
+					if [[ $this_value > 0 ]] && [[ $down_value == 0 ]]; then
+						board[$down_index]=$this_value
+						board[$this_index]=0
+						if [[ $y < $board_dim_minus_two ]]; then
+							((++y))
+						fi
+						input_was_valid=true
+					elif [[ $this_value > 0 ]] && [[ $this_value == $down_value ]] && [[ "${merged[$((y+1))]}" == '' ]]; then
+						board[$down_index]=$((this_value * 2)) # use <<= if available?
+						board[$this_index]=0
+						local merged[$((y+1))]=1
+						input_was_valid=true
+					else
+						((--y)) || true
+					fi
 				done
 			done
 			;;
 		left )
 			for ((y=0; y<$board_dim; ++y)); do
-				for ((x=0; x<$board_dim; ++x)); do
-					for ((repeats=$((board_dim-x)); repeats>0; --repeats)); do
-						local current_content=$(get_content $x $y)
-						if [[ $current_content == 0 ]]; then
-							# move everything in this row left one
-							for ((z=$x; z<$((board_dim-1)); ++z)); do
-								local one_above=$(get_index $((z+1)) $y)
-								local value_above=${board[$one_above]}
-								if [[ $value_above > 0 ]]; then
-									board[$(get_index $z $y)]=$value_above
-									board[$one_above]=0
-									input_was_valid=true
-								fi
-							done
+				local x=1
+				local merged=''
+				while [[ $x < $board_dim ]]; do
+					this_index=$(get_index $x $y)
+					this_value=${board[$this_index]}
+					left_index=$(get_index $((x-1)) $y)
+					left_value=${board[$left_index]}
+					if [[ $this_value > 0 ]] && [[ $left_value == 0 ]]; then
+						board[$left_index]=$this_value
+						board[$this_index]=0
+						if [[ $x > 1 ]]; then
+							((--x))
 						fi
-					done
+						input_was_valid=true
+					elif [[ $this_value > 0 ]] && [[ $this_value == $left_value ]] && [[ "${merged[$((x-1))]}" == '' ]]; then
+						board[$left_index]=$((this_value * 2)) # use <<= if available?
+						board[$this_index]=0
+						local merged[$((x-1))]=1
+						input_was_valid=true
+					else
+						((++x))
+					fi
 				done
 			done
 			;;
-		down )
-			for ((x=$((board_dim-1)); x>=0; --x)); do
-				for ((y=$((board_dim-1)); y>0; --y)); do
-					for ((repeats=$y; repeats>0; --repeats)); do
-						local current_content=$(get_content $x $y)
-						if [[ $current_content == 0 ]]; then
-							# move everything in this column above this square down one
-							for ((z=$y; z>0; --z)); do
-								local one_above=$(get_index $x $((z-1)))
-								local value_above=${board[$one_above]}
-								if [[ $value_above > 0 ]]; then
-									board[$(get_index $x $z)]=$value_above
-									board[$one_above]=0
-									input_was_valid=true
-								fi
-							done
+		up )
+			for ((x=0; x<$board_dim; ++x)); do
+				local y=1
+				local merged=''
+				while [[ $y < $board_dim ]]; do
+					this_index=$(get_index $x $y)
+					this_value=${board[$this_index]}
+					up_index=$(get_index $x $((y-1)))
+					up_value=${board[$up_index]}
+					if [[ $this_value > 0 ]] && [[ $up_value == 0 ]]; then
+						board[$up_index]=$this_value
+						board[$this_index]=0
+						if [[ $y > 1 ]]; then
+							((--y))
 						fi
-					done
-				done
-			done
-			;;
-		right )
-			for ((y=$((board_dim-1)); y>=0; --y)); do
-				for ((x=$((board_dim-1)); x>0; --x)); do
-					for ((repeats=$x; repeats>0; --repeats)); do
-						local current_content=$(get_content $x $y)
-						if [[ $current_content == 0 ]]; then
-							# move everything in this row left one
-							for ((z=$x; z>0; --z)); do
-								local one_above=$(get_index $((z-1)) $y)
-								local value_above=${board[$one_above]}
-								if [[ $value_above > 0 ]]; then
-									board[$(get_index $z $y)]=$value_above
-									board[$one_above]=0
-									input_was_valid=true
-								fi
-							done
-						fi
-					done
+						input_was_valid=true
+					elif [[ $this_value > 0 ]] && [[ $this_value == $up_value ]] && [[ "${merged[$((y-1))]}" == '' ]]; then
+						board[$up_index]=$((this_value * 2)) # use <<= if available?
+						board[$this_index]=0
+						local merged[$((y-1))]=1
+						input_was_valid=true
+					else
+						((++y))
+					fi
 				done
 			done
 			;;
 	esac
-}
-
-squash() {
-	trace squash ENTRY :: $@
-	case $1 in
-		up ) squash_up_or_left 0 1 ;;
-		left ) squash_up_or_left 1 0 ;;
-		down ) squash_down_or_right 0 1 ;;
-		right ) squash_down_or_right 1 0 ;;
-	esac
-}
-
-squash_down_or_right() {
-	local x_change=$1
-	local y_change=$2
-	for ((x=$((board_dim-1)); x>=$x_change; --x)); do
-		for ((y=$((board_dim-1)); y>=$y_change; --y)); do
-			local this_content=$(get_content $x $y)
-			local next_index=$(get_index $((x-x_change)) $((y-y_change)))
-			local next_content=${board[next_index]}
-			log "squashing ($x,$y)->$next_index.  this=$this_content; next=$next_content"
-			if [[ $((next_index > -1)) == 1 ]]; then
-				if [[ $this_content > 0 ]] && [[ $this_content == $next_content ]]; then
-					local new_value=$((this_content * 2))
-					set_content $x $y $new_value
-					((score += new_value))
-					board[$next_index]=0
-					input_was_valid=true
-					log "Done squashing."
-				else
-					log "Actually not squashing."
-				fi
-			fi
-		done
-	done
-}
-
-squash_up_or_left() {
-	local x_change=$1
-	local y_change=$2
-	for ((x=0; x<$((board_dim-x_change)); ++x)); do
-		for ((y=0; y<$((board_dim-y_change)); ++y)); do
-			local this_content=$(get_content $x $y)
-			local next_index=$(get_index $((x+x_change)) $((y+y_change)))
-			local next_content=${board[next_index]}
-			log "squashing.  this=$this_content; next=$next_content"
-			if [[ $this_content > 0 ]] && [[ $this_content == $next_content ]]; then
-				local new_value=$((this_content * 2))
-				set_content $x $y $new_value
-				((score += new_value))
-				board[$next_index]=0
-				input_was_valid=true
-				log "Done squashing."
-			else
-				log "Actually not squashing."
-			fi
-		done
-	done
-}
-
-move() {
-	local direction=$1
-	shuffle $direction
-	squash $direction
-	shuffle $direction
 }
 
 process_input() {
